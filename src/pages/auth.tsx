@@ -17,7 +17,7 @@ export default function Auth() {
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate("/dashboard", { replace: true });
+      if (data.session) navigate("/app", { replace: true });
     });
   }, [navigate]);
 
@@ -39,7 +39,7 @@ export default function Auth() {
         return;
       }
       if (data.session) {
-        navigate("/dashboard", { replace: true });
+        navigate("/app", { replace: true });
         return;
       }
       setMessage("Check your email to confirm your account．請至信箱確認註冊。");
@@ -55,7 +55,7 @@ export default function Auth() {
       setError(signInError.message);
       return;
     }
-    navigate("/dashboard", { replace: true });
+    navigate("/app", { replace: true });
   }
 
   return (

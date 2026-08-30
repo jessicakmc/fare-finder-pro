@@ -50,7 +50,7 @@ export default function Landing() {
         </span>
         {signedIn ? (
           <Link
-            to="/dashboard"
+            to="/app"
             className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-lg transition hover:brightness-110"
           >
             Dashboard

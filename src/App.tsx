@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -22,8 +22,10 @@ export default function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route element={<RequireAuth />}>
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/app" element={<Dashboard />} />
             </Route>
+            {/* Legacy path — /app is canonical; keep old links and bookmarks working. */}
+            <Route path="/dashboard" element={<Navigate to="/app" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
