@@ -54,23 +54,40 @@ display, payment, custom database tables (do NOT create a subscriptions or
 profiles table — only use Supabase's default auth.users). Those come in
 later milestones. Stick to landing page + auth + placeholder dashboard.
 
-This project was built with [Lovable](https://lovable.dev).
+## Stack
 
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/e21dc8b3-1cf8-4ffa-a0ca-d820b0aa84b1).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+A plain Vite + React single-page app, using React Router for client-side
+routing and Supabase for email/password auth. No SSR, no server runtime —
+it builds to a static `dist/` bundle and deploys to Vercel.
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
+git clone https://github.com/jessicakmc/fare-finder-pro.git
+cd fare-finder-pro
 npm i
 npm run dev
 ```
+
+## Environment variables
+
+Copy `.env.example` to `.env` and fill in your Supabase project's URL and
+publishable key (Project Settings → API in the Supabase dashboard):
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+A committed `.env` with real values is already present for this project's own
+Supabase instance — the publishable key is safe to expose client-side (it's
+constrained by Row Level Security), never put a service-role/secret key here.
+
+## Deploy
+
+The repo ships with a `vercel.json` (build command, `dist/` output, and a SPA
+rewrite so deep links like `/dashboard` resolve client-side). Import the repo
+into Vercel and it will build automatically. The committed `.env` already
+supplies `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, but you can
+also set them under Project Settings → Environment Variables in Vercel if you
+prefer to manage them there instead — a dashboard value takes precedence.
