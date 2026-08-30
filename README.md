@@ -71,23 +71,25 @@ npm i
 npm run dev
 ```
 
-## Environment variables
+## Supabase configuration
 
-Copy `.env.example` to `.env` and fill in your Supabase project's URL and
-publishable key (Project Settings → API in the Supabase dashboard):
+No setup required — the project URL and publishable (anon) key live in
+`src/integrations/supabase/config.ts`. Both are public by design: they compile
+into the client bundle and are visible to anyone loading the site, with access
+enforced by Row Level Security rather than by keeping the key secret. Never put
+a service-role / secret key there.
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
+To point a build at a different Supabase project, set `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_PUBLISHABLE_KEY` — locally in a `.env` (see `.env.example`), or
+in Vercel under Project Settings → Environment Variables. Either overrides the
+defaults.
 
-A committed `.env` with real values is already present for this project's own
-Supabase instance — the publishable key is safe to expose client-side (it's
-constrained by Row Level Security), never put a service-role/secret key here.
+> Vercel ignores a committed `.env` file during builds, which is why the
+> defaults live in source rather than in a checked-in `.env`.
 
 ## Deploy
 
 The repo ships with a `vercel.json` (build command, `dist/` output, and a SPA
 rewrite so deep links like `/dashboard` resolve client-side). Import the repo
-into Vercel and it will build automatically. The committed `.env` already
-supplies `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, but you can
-also set them under Project Settings → Environment Variables in Vercel if you
-prefer to manage them there instead — a dashboard value takes precedence.
+into Vercel and it builds and deploys on every push to `main`, with no
+environment variables to configure.

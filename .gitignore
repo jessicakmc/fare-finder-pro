@@ -11,6 +11,11 @@ node_modules
 dist
 *.local
 
+# Local env overrides. Vercel ignores committed .env files during builds, so the
+# deployed defaults live in src/integrations/supabase/config.ts instead.
+.env
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
