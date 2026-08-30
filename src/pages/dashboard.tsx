@@ -12,7 +12,7 @@ import type { AuthedOutletContext } from "@/components/require-auth";
 // client-supplied email with no auth — fine for this no-guard course.
 const FLIGHT_API_URL = "https://j8a03awu97.execute-api.us-east-1.amazonaws.com";
 
-type PlanName = "tokyo" | "seoul";
+type PlanName = "tokyo" | "seoul" | "london";
 
 type SubscriptionRow = {
   route: string;
@@ -24,6 +24,7 @@ type SubscriptionRow = {
 const PLANS: { name: PlanName; label: string; hint: string }[] = [
   { name: "tokyo", label: "台北 ✈ 東京", hint: "目前約 NT$9,325" },
   { name: "seoul", label: "台北 ✈ 首爾", hint: "目前約 NT$5,989" },
+  { name: "london", label: "台北 ✈ 倫敦", hint: "目前無即時報價，仍可設定目標價" },
 ];
 
 export default function Dashboard() {
@@ -33,14 +34,16 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [targets, setTargets] = useState<Record<PlanName, string>>({ tokyo: "", seoul: "" });
+  const [targets, setTargets] = useState<Record<PlanName, string>>({ tokyo: "", seoul: "", london: "" });
   const [status, setStatus] = useState<Record<PlanName, "idle" | "saving" | "saved" | "error">>({
     tokyo: "idle",
     seoul: "idle",
+    london: "idle",
   });
   const [subscriptions, setSubscriptions] = useState<Record<PlanName, SubscriptionRow | null>>({
     tokyo: null,
     seoul: null,
+    london: null,
   });
   const [loadingSubs, setLoadingSubs] = useState(true);
 
@@ -53,9 +56,9 @@ export default function Dashboard() {
       );
       if (!res.ok) throw new Error(`list failed: ${res.status}`);
       const data = (await res.json()) as { items: SubscriptionRow[] };
-      const byPlan: Record<PlanName, SubscriptionRow | null> = { tokyo: null, seoul: null };
+      const byPlan: Record<PlanName, SubscriptionRow | null> = { tokyo: null, seoul: null, london: null };
       for (const item of data.items) {
-        if (item.plan_name === "tokyo" || item.plan_name === "seoul") {
+        if (item.plan_name === "tokyo" || item.plan_name === "seoul" || item.plan_name === "london") {
           byPlan[item.plan_name] = item;
         }
       }
