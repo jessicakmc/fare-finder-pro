@@ -1,28 +1,14 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useDocumentTitle } from "@/hooks/use-document-title";
+import type { AuthedOutletContext } from "@/components/require-auth";
 
-export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({
-    meta: [
-      { title: "Dashboard · Flight Price Notifier" },
-      {
-        name: "description",
-        content: "Your Flight Price Notifier dashboard for upcoming fare alerts.",
-      },
-      { property: "og:title", content: "Dashboard · Flight Price Notifier" },
-      {
-        property: "og:description",
-        content: "Manage your flight fare alerts.",
-      },
-    ],
-  }),
-  component: Dashboard,
-});
+export default function Dashboard() {
+  useDocumentTitle("Dashboard · Flight Price Notifier");
 
-function Dashboard() {
-  const { user } = Route.useRouteContext();
+  const { user } = useOutletContext<AuthedOutletContext>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -30,7 +16,7 @@ function Dashboard() {
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
-    void navigate({ to: "/auth", replace: true });
+    navigate("/auth", { replace: true });
   }
 
   return (
@@ -53,9 +39,7 @@ function Dashboard() {
 
       <main className="mx-auto max-w-5xl px-5 py-16">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Signed in as {user.email}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">Signed in as {user.email}</p>
 
         <div className="mt-10 rounded-2xl border border-dashed border-border bg-card p-10 text-center">
           <p className="text-lg font-semibold">尚未有航線通知</p>

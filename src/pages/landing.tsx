@@ -1,27 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useReveal } from "@/hooks/use-reveal";
-
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Flight Price Notifier — 機票降價通知" },
-      {
-        name: "description",
-        content:
-          "Set a route and a target price — we email you when the cheapest fare from Taipei drops to your budget.",
-      },
-      { property: "og:title", content: "Flight Price Notifier — 機票降價通知" },
-      {
-        property: "og:description",
-        content: "設定航線與目標價，機票降價就通知你。Fare alerts for budget-driven travelers.",
-      },
-    ],
-  }),
-  component: Landing,
-});
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 const features = [
   {
@@ -44,7 +26,9 @@ const features = [
   },
 ];
 
-function Landing() {
+export default function Landing() {
+  useDocumentTitle("Flight Price Notifier — 機票降價通知");
+
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
@@ -123,13 +107,7 @@ function Landing() {
   );
 }
 
-function FeatureCard({
-  feature,
-  delay,
-}: {
-  feature: (typeof features)[number];
-  delay: number;
-}) {
+function FeatureCard({ feature, delay }: { feature: (typeof features)[number]; delay: number }) {
   const ref = useReveal<HTMLElement>();
 
   return (
