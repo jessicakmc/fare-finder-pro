@@ -1,6 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config";
+
+// Connection details come from the environment only — never hardcoded here.
+// Locally these are read from .env (see .env.example); on Vercel they come from
+// Project Settings → Environment Variables. VITE_SUPABASE_PUBLISHABLE_KEY holds
+// Supabase's publishable key (sb_publishable_*), the current name for what used
+// to be called the anon key: browser-safe and gated by Row Level Security.
+// vite.config.ts fails the build if either is missing, so a deployed bundle
+// always has them.
+const SUPABASE_URL = import.meta.env["VITE_SUPABASE_URL"];
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
 
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
@@ -30,6 +39,18 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 function createSupabaseClient() {
+  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+    const missing = [
+      ...(!SUPABASE_URL ? ["VITE_SUPABASE_URL"] : []),
+      ...(!SUPABASE_PUBLISHABLE_KEY ? ["VITE_SUPABASE_PUBLISHABLE_KEY"] : []),
+    ];
+    throw new Error(
+      `Missing Supabase environment variable(s): ${missing.join(", ")}. ` +
+        `Set them in .env locally (see .env.example), or in Vercel under ` +
+        `Project Settings → Environment Variables, then rebuild.`,
+    );
+  }
+
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {
       fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),

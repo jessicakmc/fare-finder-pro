@@ -71,25 +71,30 @@ npm i
 npm run dev
 ```
 
-## Supabase configuration
+## Environment variables
 
-No setup required — the project URL and publishable (anon) key live in
-`src/integrations/supabase/config.ts`. Both are public by design: they compile
-into the client bundle and are visible to anyone loading the site, with access
-enforced by Row Level Security rather than by keeping the key secret. Never put
-a service-role / secret key there.
+Two are required, and nothing is hardcoded in source:
 
-To point a build at a different Supabase project, set `VITE_SUPABASE_URL` and
-`VITE_SUPABASE_PUBLISHABLE_KEY` — locally in a `.env` (see `.env.example`), or
-in Vercel under Project Settings → Environment Variables. Either overrides the
-defaults.
+| Variable | Value |
+| --- | --- |
+| `VITE_SUPABASE_URL` | Your Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Your publishable key (`sb_publishable_…`) |
 
-> Vercel ignores a committed `.env` file during builds, which is why the
-> defaults live in source rather than in a checked-in `.env`.
+Both come from the Supabase dashboard under Project Settings → API. The
+publishable key is the current name for what used to be called the anon key —
+browser-safe and gated by Row Level Security. Never use a service-role / secret
+key here.
+
+For local development, copy `.env.example` to `.env` and fill them in. `.env` is
+gitignored.
 
 ## Deploy
 
 The repo ships with a `vercel.json` (build command, `dist/` output, and a SPA
 rewrite so deep links like `/dashboard` resolve client-side). Import the repo
-into Vercel and it builds and deploys on every push to `main`, with no
-environment variables to configure.
+into Vercel and it builds and deploys on every push to `main`.
+
+Vercel **ignores committed `.env` files during builds**, so the two variables
+above must be set in Vercel under Project Settings → Environment Variables
+(Production, Preview and Development). If either is missing the build fails with
+an explicit message rather than deploying a page that breaks on load.
