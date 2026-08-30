@@ -67,7 +67,7 @@ export default function Auth() {
       </header>
 
       <main className="flex flex-1 items-center justify-center px-5 pb-20">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-2xl">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-soft">
           <h1 className="text-2xl font-bold tracking-tight">
             {mode === "signin" ? "Welcome back．登入" : "Create account．註冊"}
           </h1>
@@ -112,7 +112,7 @@ export default function Auth() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[0_0_30px_var(--color-violet-glow)] transition hover:brightness-110 disabled:opacity-60"
+              className="w-full rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[0_0_30px_var(--color-sky-glow)] transition hover:brightness-110 disabled:opacity-60"
             >
               {loading ? "…" : mode === "signin" ? "Sign in / 登入" : "Create account / 註冊"}
             </button>

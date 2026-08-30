@@ -68,10 +68,10 @@ export default function Landing() {
       <main>
         <section className="hero-glow relative overflow-hidden border-b border-border">
           <div className="mx-auto max-w-4xl px-5 py-24 text-center sm:py-32">
-            <p className="mb-6 inline-flex items-center rounded-full border border-border bg-card/60 px-3 py-1 text-xs text-muted-foreground">
+            <p className="mb-6 inline-flex items-center rounded-full border border-terracotta/30 bg-accent px-3 py-1 text-xs text-accent-foreground">
               台北出發 · 東京 · 首爾
             </p>
-            <h1 className="text-gradient-violet text-4xl font-bold tracking-tight sm:text-6xl">
+            <h1 className="text-gradient-sky text-4xl font-bold tracking-tight sm:text-6xl">
               Flight Price Notifier
             </h1>
             <p className="mt-6 text-xl font-medium sm:text-2xl">
@@ -83,7 +83,7 @@ export default function Landing() {
             <div className="mt-10 flex justify-center">
               <Link
                 to="/auth"
-                className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[0_0_40px_var(--color-violet-glow)] transition hover:brightness-110"
+                className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[0_0_40px_var(--color-sky-glow)] transition hover:brightness-110"
               >
                 Sign in / 登入
               </Link>
