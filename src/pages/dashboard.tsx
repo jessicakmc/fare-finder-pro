@@ -252,14 +252,20 @@ export default function Dashboard() {
     }
     setStatus((s) => ({ ...s, [plan]: "saving" }));
 
-    // Open the checkout tab synchronously, right in the click handler, so
-    // the browser's popup blocker treats it as a direct result of the
-    // user's click rather than an unrequested popup — by the time the
+    // Only a row with no real charge yet (no row at all, or
+    // pending_payment/legacy/expired — see primaryButtonLabel: "開始追蹤" /
+    // "完成付款" / "重新訂閱") actually redirects to ECPay. "更新目標價" on an
+    // active/cancelled row is a plain in-place price update with no
+    // checkout — opening a blank tab for that just to close it again a
+    // moment later is the flicker Jessica saw, so only open the tab when a
+    // checkout is actually expected. It still has to happen synchronously
+    // here, in the click handler itself, so the browser's popup blocker
+    // treats it as a direct result of the user's click — by the time the
     // checkout HTML comes back from the fetch below it's async and a
-    // window.open() there would get blocked. We fill this blank tab in
-    // once we know what /subscribe actually returned; if it turns out to
-    // be a plain JSON update (no payment needed), we just close it again.
-    const checkoutTab = window.open("", "_blank");
+    // window.open() there would get blocked.
+    const resolved = resolveStatus(subscriptions[plan]);
+    const needsCheckout = resolved !== "active" && resolved !== "cancelled";
+    const checkoutTab = needsCheckout ? window.open("", "_blank") : null;
 
     try {
       const res = await fetch(`${FLIGHT_API_URL}/subscribe`, {
@@ -280,8 +286,10 @@ export default function Dashboard() {
           checkoutTab.document.write(html);
           checkoutTab.document.close();
         } else {
-          // Popup blocked — fall back to navigating this tab so checkout
-          // still works even without the new-tab convenience.
+          // Either the popup was blocked, or the backend decided a
+          // checkout was needed when we didn't expect one — either way,
+          // fall back to navigating this tab so checkout still works even
+          // without the new-tab convenience.
           document.open();
           document.write(html);
           document.close();
