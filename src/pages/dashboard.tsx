@@ -251,6 +251,16 @@ export default function Dashboard() {
       return;
     }
     setStatus((s) => ({ ...s, [plan]: "saving" }));
+
+    // Open the checkout tab synchronously, right in the click handler, so
+    // the browser's popup blocker treats it as a direct result of the
+    // user's click rather than an unrequested popup — by the time the
+    // checkout HTML comes back from the fetch below it's async and a
+    // window.open() there would get blocked. We fill this blank tab in
+    // once we know what /subscribe actually returned; if it turns out to
+    // be a plain JSON update (no payment needed), we just close it again.
+    const checkoutTab = window.open("", "_blank");
+
     try {
       const res = await fetch(`${FLIGHT_API_URL}/subscribe`, {
         method: "POST",
@@ -262,20 +272,33 @@ export default function Dashboard() {
       const contentType = res.headers.get("content-type") ?? "";
       if (contentType.includes("text/html")) {
         // New checkout (or resuming a pending_payment/expired/legacy row) —
-        // hand the browser to ECPay's cashier. The page navigates away, so
-        // there's nothing left to update in React state.
+        // hand the NEW tab to ECPay's cashier so this dashboard tab stays
+        // put behind it; no need to hit "back" to get back to it.
         const html = await res.text();
-        document.open();
-        document.write(html);
-        document.close();
+        if (checkoutTab) {
+          checkoutTab.document.open();
+          checkoutTab.document.write(html);
+          checkoutTab.document.close();
+        } else {
+          // Popup blocked — fall back to navigating this tab so checkout
+          // still works even without the new-tab convenience.
+          document.open();
+          document.write(html);
+          document.close();
+          return;
+        }
+        setStatus((s) => ({ ...s, [plan]: "idle" }));
         return;
       }
 
-      // application/json — in-place target-price update, no re-payment.
+      // application/json — in-place target-price update, no re-payment
+      // needed, so there's nothing for the blank tab to show.
+      checkoutTab?.close();
       setStatus((s) => ({ ...s, [plan]: "saved" }));
       setTargets((t) => ({ ...t, [plan]: "" }));
       await loadSubscriptions();
     } catch {
+      checkoutTab?.close();
       setStatus((s) => ({ ...s, [plan]: "error" }));
     }
   }
