@@ -163,13 +163,16 @@ function primaryButtonLabel(status: ResolvedStatus | null, saving: boolean) {
   if (saving) return "處理中… Processing…";
   switch (status) {
     case "active":
-    case "cancelled":
       return "更新目標價 Update price";
+    // A cancelled row's recurring charge already stopped -- there's no
+    // live subscription left to just adjust the price on, so this is a
+    // real resubscribe (new ECPay checkout), same as "expired".
+    case "cancelled":
+    case "expired":
+      return "重新訂閱 Resubscribe";
     case "pending_payment":
     case "legacy":
       return `完成付款 Pay NT$${MONTHLY_PRICE_TWD}`;
-    case "expired":
-      return "重新訂閱 Resubscribe";
     default:
       return "開始追蹤 Start tracking";
   }
@@ -261,19 +264,21 @@ export default function Dashboard() {
     }
     setStatus((s) => ({ ...s, [plan]: "saving" }));
 
-    // Only a row with no real charge yet (no row at all, or
-    // pending_payment/legacy/expired — see primaryButtonLabel: "開始追蹤" /
-    // "完成付款" / "重新訂閱") actually redirects to ECPay. "更新目標價" on an
-    // active/cancelled row is a plain in-place price update with no
-    // checkout — opening a blank tab for that just to close it again a
-    // moment later is the flicker Jessica saw, so only open the tab when a
-    // checkout is actually expected. It still has to happen synchronously
-    // here, in the click handler itself, so the browser's popup blocker
-    // treats it as a direct result of the user's click — by the time the
-    // checkout HTML comes back from the fetch below it's async and a
-    // window.open() there would get blocked.
+    // Only a genuinely active row is a plain in-place price update with
+    // no checkout (see primaryButtonLabel: "更新目標價") — its recurring
+    // charge is still live, nothing new to pay for. Every other case (no
+    // row, pending_payment/legacy/expired, and now cancelled too — its
+    // charge already stopped, so "更新目標價" isn't real without a fresh
+    // payment) actually redirects to ECPay, so open the tab for those.
+    // Opening a blank tab for the active case just to close it again a
+    // moment later is the flicker Jessica saw, hence checking first. The
+    // tab still has to open synchronously here, in the click handler
+    // itself, so the browser's popup blocker treats it as a direct result
+    // of the user's click — by the time the checkout HTML comes back from
+    // the fetch below it's async and a window.open() there would get
+    // blocked.
     const resolved = resolveStatus(subscriptions[plan]);
-    const needsCheckout = resolved !== "active" && resolved !== "cancelled";
+    const needsCheckout = resolved !== "active";
     const checkoutTab = needsCheckout ? window.open("", "_blank") : null;
 
     try {
@@ -411,7 +416,8 @@ export default function Dashboard() {
                     <span className="font-medium text-foreground">
                       {sub.current_period_end_date}
                     </span>
-                    （仍會通知到該日） Notifications continue until this date.
+                    （仍會通知到該日）。點「重新訂閱」會立即開始新的付款週期。 Notifications
+                    continue until this date. "Resubscribe" starts a new paid period right away.
                   </p>
                 )}
                 {(resolved === "pending_payment" || resolved === "legacy") && (
