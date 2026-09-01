@@ -245,7 +245,16 @@ export default function Dashboard() {
   // Blindly calling res.json() here (the old M1 behaviour) throws on the HTML
   // response and silently breaks the subscribe button — this is that fix.
   async function handleSubscribe(plan: PlanName) {
-    const targetPrice = Number(targets[plan]);
+    // The input is cleared back to "" after every successful save and only
+    // shows the existing target price as a greyed-out placeholder — so if
+    // the user doesn't retype it (easy to assume it's already filled in,
+    // since it's right there on screen), targets[plan] is empty and this
+    // used to fail validation immediately with a generic error and no
+    // redirect at all. Empty now falls back to the row's current target
+    // price, matching what the placeholder already tells the user.
+    const existingTarget = subscriptions[plan]?.target_price;
+    const rawTarget = targets[plan] || (existingTarget != null ? String(existingTarget) : "");
+    const targetPrice = Number(rawTarget);
     if (!Number.isFinite(targetPrice) || targetPrice <= 0) {
       setStatus((s) => ({ ...s, [plan]: "error" }));
       return;
