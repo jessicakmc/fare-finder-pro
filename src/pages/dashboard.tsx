@@ -12,6 +12,11 @@ import type { AuthedOutletContext } from "@/components/require-auth";
 // client-supplied email with no auth — fine for this no-guard course.
 const FLIGHT_API_URL = "https://j8a03awu97.execute-api.us-east-1.amazonaws.com";
 
+// Fixed monthly price from the flight/ecpay secret's "amount" field — the
+// checkout amount ECPay actually charges. Shown on the pay button so the
+// user isn't guessing what "完成付款" commits them to.
+const MONTHLY_PRICE_TWD = 300;
+
 type PlanName = "tokyo" | "seoul" | "london";
 
 // M2 — ECPay 定期定額 lifecycle: pending_payment → active ⇄ cancelled (grace) → expired.
@@ -30,44 +35,143 @@ type SubscriptionRow = {
 };
 
 const PLANS: { name: PlanName; label: string; hint: string }[] = [
-  { name: "tokyo", label: "台北 ✈ 東京", hint: "目前約 NT$9,325" },
-  { name: "seoul", label: "台北 ✈ 首爾", hint: "目前約 NT$5,989" },
+  { name: "tokyo", label: "台北 ✈ 東京", hint: "目前最低約 NT$9,325（參考）" },
+  { name: "seoul", label: "台北 ✈ 首爾", hint: "目前最低約 NT$5,989（參考）" },
   { name: "london", label: "台北 ✈ 倫敦", hint: "目前無即時報價，仍可設定目標價" },
 ];
+
+// Small status icons, drawn inline (no icon package) so they inherit the
+// badge's text color via currentColor and stay crisp at 14px.
+function IconCheck() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8 12.5 2.5 2.5L16 9.5" />
+    </svg>
+  );
+}
+function IconClock() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3.5 2" />
+    </svg>
+  );
+}
+function IconBan() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="m6.5 6.5 11 11" />
+    </svg>
+  );
+}
+function IconAlert() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7.5v5.5" />
+      <circle cx="12" cy="16.2" r="0.6" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
 
 function resolveStatus(sub: SubscriptionRow | null): ResolvedStatus | null {
   if (!sub) return null;
   return sub.subscription_status ?? "legacy";
 }
 
+// Coastal-theme badge colors: primary (sky blue) for a genuinely active sub,
+// the warm accent (peach/terracotta) for "still needs payment", muted grey
+// for a wound-down cancellation, destructive red for a lapsed one.
 function statusMeta(status: ResolvedStatus) {
   switch (status) {
     case "active":
-      return { badge: "已訂閱（有效）", badgeClass: "bg-primary/10 text-primary" };
+      return {
+        badge: "已訂閱（有效） Active",
+        badgeClass: "bg-primary/10 text-primary",
+        Icon: IconCheck,
+      };
     case "pending_payment":
-      return { badge: "未完成付款", badgeClass: "bg-amber-500/10 text-amber-700" };
+      return {
+        badge: "未完成付款 Pending payment",
+        badgeClass: "bg-accent text-accent-foreground",
+        Icon: IconClock,
+      };
     case "legacy":
-      return { badge: "未完成付款", badgeClass: "bg-amber-500/10 text-amber-700" };
+      return {
+        badge: "未完成付款 Pending payment",
+        badgeClass: "bg-accent text-accent-foreground",
+        Icon: IconClock,
+      };
     case "cancelled":
-      return { badge: "已取消", badgeClass: "bg-muted text-muted-foreground" };
+      return {
+        badge: "已取消 Cancelled",
+        badgeClass: "bg-muted text-muted-foreground",
+        Icon: IconBan,
+      };
     case "expired":
-      return { badge: "已結束", badgeClass: "bg-destructive/10 text-destructive" };
+      return {
+        badge: "已結束 Expired",
+        badgeClass: "bg-destructive/10 text-destructive",
+        Icon: IconAlert,
+      };
   }
 }
 
 function primaryButtonLabel(status: ResolvedStatus | null, saving: boolean) {
-  if (saving) return "處理中…";
+  if (saving) return "處理中… Processing…";
   switch (status) {
     case "active":
     case "cancelled":
-      return "更新目標價";
+      return "更新目標價 Update price";
     case "pending_payment":
     case "legacy":
-      return "完成付款";
+      return `完成付款 Pay NT$${MONTHLY_PRICE_TWD}`;
     case "expired":
-      return "重新訂閱";
+      return "重新訂閱 Resubscribe";
     default:
-      return "開始追蹤";
+      return "開始追蹤 Start tracking";
   }
 }
 
@@ -176,9 +280,17 @@ export default function Dashboard() {
     }
   }
 
-  // M2 Step 6 — cancel calls ECPay's CreditCardPeriodAction (server-side) and
-  // grants a grace period: the row goes to "cancelled", not "expired", and
-  // keeps alerting through current_period_end.
+  // One endpoint, two very different outcomes depending on what the row
+  // actually is server-side:
+  //   - active     → ECPay's CreditCardPeriodAction stops the recurring
+  //                  charge; the row becomes "cancelled" with a grace period
+  //                  (still alerts through current_period_end).
+  //   - pending_payment / expired / legacy (no subscription_status) → there
+  //                  was never a real charge to cancel, so the backend just
+  //                  deletes the row outright and the card goes back to
+  //                  "not tracked" — the user can start over with a new
+  //                  target price.
+  // The front end doesn't need to know which branch fires; it just reloads.
   async function handleCancel(plan: PlanName, route: string) {
     setStatus((s) => ({ ...s, [plan]: "saving" }));
     try {
@@ -229,16 +341,24 @@ export default function Dashboard() {
             const sub = subscriptions[plan.name];
             const resolved = loadingSubs ? null : resolveStatus(sub);
             const meta = resolved ? statusMeta(resolved) : null;
-            const showCancel = resolved === "active";
+            const Icon = meta?.Icon;
+            const isPendingLike =
+              resolved === "pending_payment" || resolved === "legacy" || resolved === "expired";
+            const showCancelActive = resolved === "active";
+            const showRemovePending = isPendingLike && !!sub;
 
             return (
-              <div key={plan.name} className="rounded-2xl border border-border bg-card p-6">
-                <div className="flex items-center justify-between">
+              <div
+                key={plan.name}
+                className="rounded-2xl border border-border bg-card p-6 shadow-soft"
+              >
+                <div className="flex items-center justify-between gap-3">
                   <p className="text-lg font-semibold">{plan.label}</p>
                   {meta && (
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${meta.badgeClass}`}
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${meta.badgeClass}`}
                     >
+                      {Icon && <Icon />}
                       {meta.badge}
                     </span>
                   )}
@@ -251,17 +371,19 @@ export default function Dashboard() {
                     <span className="font-medium text-foreground">
                       {sub.current_period_end_date}
                     </span>
-                    （仍會通知到該日）
+                    （仍會通知到該日） Notifications continue until this date.
                   </p>
                 )}
                 {(resolved === "pending_payment" || resolved === "legacy") && (
-                  <p className="mt-3 text-sm text-amber-700">
-                    尚未完成付款，完成付款後才會開始收到通知。
+                  <p className="mt-3 text-sm text-accent-foreground">
+                    尚未完成付款，點「完成付款」前往綠界結帳。 Not tracking yet — tap Pay to check
+                    out with ECPay.
                   </p>
                 )}
                 {resolved === "expired" && (
                   <p className="mt-3 text-sm text-destructive">
-                    訂閱已結束，重新訂閱即可恢復通知。
+                    訂閱已結束，重新訂閱即可恢復通知。 Subscription ended — resubscribe to resume
+                    notifications.
                   </p>
                 )}
 
@@ -273,7 +395,7 @@ export default function Dashboard() {
                 )}
 
                 <label className="mt-4 block text-sm font-medium" htmlFor={`target-${plan.name}`}>
-                  {sub ? "更新目標價（TWD）" : "目標價（TWD）"}
+                  目標價 Target price (NT$)
                 </label>
                 <input
                   id={`target-${plan.name}`}
@@ -290,19 +412,19 @@ export default function Dashboard() {
                   type="button"
                   onClick={() => handleSubscribe(plan.name)}
                   disabled={status[plan.name] === "saving"}
-                  className="mt-4 w-full rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+                  className="mt-4 w-full rounded-full bg-terracotta px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
                 >
                   {primaryButtonLabel(resolved, status[plan.name] === "saving")}
                 </button>
 
-                {showCancel && sub && (
+                {(showCancelActive || showRemovePending) && sub && (
                   <button
                     type="button"
                     onClick={() => handleCancel(plan.name, sub.route)}
                     disabled={status[plan.name] === "saving"}
-                    className="mt-2 w-full rounded-full border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-destructive/60 hover:text-destructive disabled:opacity-60"
+                    className="mt-3 block text-sm text-muted-foreground underline decoration-dotted underline-offset-4 transition hover:text-destructive disabled:opacity-60"
                   >
-                    取消訂閱
+                    {showCancelActive ? "取消訂閱 Cancel subscription" : "取消追蹤 Remove"}
                   </button>
                 )}
 
